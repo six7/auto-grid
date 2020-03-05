@@ -44,10 +44,14 @@ figma.ui.onmessage = msg => {
     const frame = figma.createFrame()
     frame.layoutMode = "HORIZONTAL";
     frame.appendChild(node)
-    for(var counter:number = 1, counter < 10, counter++) {
+    for(var counter:number = 1; counter < columns; counter++) {
       console.log({counter})
       let copy = node.clone();
       frame.appendChild(copy)
+    }
+    for(var counter:number = 1; counter < rows; counter++) {
+      let copy = frame.clone();
+      frame.parent.appendChild(copy)
     }
     return;
   }
