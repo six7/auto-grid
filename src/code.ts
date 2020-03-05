@@ -38,21 +38,35 @@ figma.ui.onmessage = msg => {
   console.log("type", msg.type);
   if (msg.type === "place") {
     const { rows, columns, gap } = msg;
-    console.log({ rows, columns, gap })
     const {selection} = figma.currentPage
     const node = selection[0]
     const frame = figma.createFrame()
     frame.layoutMode = "HORIZONTAL";
+    frame.counterAxisSizingMode = "AUTO";
+    frame.itemSpacing = gap;
     frame.appendChild(node)
+    var nodes = []
     for(var counter:number = 1; counter < columns; counter++) {
-      console.log({counter})
       let copy = node.clone();
       frame.appendChild(copy)
     }
+    nodes.push(frame)
     for(var counter:number = 1; counter < rows; counter++) {
       let copy = frame.clone();
       frame.parent.appendChild(copy)
+      nodes.push(copy)
     }
+    figma.currentPage.selection = nodes
+    const grid = figma.createFrame()
+    grid.layoutMode = "VERTICAL";
+    grid.counterAxisSizingMode = "AUTO";
+    grid.itemSpacing = gap;
+
+    for(const node of nodes) {
+      grid.appendChild(node)
+    }
+
+    figma.viewport.scrollAndZoomIntoView(nodes)
     return;
   }
 
