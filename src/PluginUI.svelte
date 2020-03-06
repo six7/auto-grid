@@ -4,6 +4,12 @@
   //contains Figma color vars, spacing vars, utility classes and more
   import { GlobalCSS } from "figma-plugin-ds-svelte";
   import Input from "./Input.svelte";
+  import {
+    Icon,
+    IconLayoutGridColumns,
+    IconLayoutGridRows,
+    IconArrowLeftRight
+  } from "figma-plugin-ds-svelte";
 
   //import some Svelte Figma UI components
   import { Button, Label, SelectMenu, Switch } from "figma-plugin-ds-svelte";
@@ -19,11 +25,11 @@
   //the select menu, its value is bound to the primary buttons disabled prop
 
   $: values = {
-    rows: Number(rows),
-    columns: Number(columns),
-    gap: Number(gap),
-    autoflow: Boolean(autoflow),
-    removeoverflow: Boolean(removeoverflow)
+    rowCount: Number(rows),
+    columnCount: Number(columns),
+    cellPadding: Number(gap),
+    shouldAutoFlow: Boolean(autoflow),
+    shouldRemoveOverflow: Boolean(removeoverflow)
   };
 
   function placeAction() {
@@ -96,21 +102,21 @@
         <Label>Rows</Label>
         <Input
           name="rows"
-          iconText="S"
+          iconName={IconLayoutGridRows}
           bind:value={rows}
           on:change={updateValues}
           class="mb-xxsmall" />
         <Label>columns</Label>
         <Input
           name="columns"
-          iconText="S"
+          iconName={IconLayoutGridColumns}
           bind:value={columns}
           on:change={updateValues}
           class="mb-xxsmall" />
         <Label>Gap</Label>
         <Input
           name="gap"
-          iconText="S"
+          iconName={IconArrowLeftRight}
           bind:value={gap}
           on:change={updateValues}
           class="mb-xxsmall" />
@@ -120,15 +126,17 @@
           on:change={updateValues}>
           Autoflow
         </Switch>
-        <Switch
+        <!-- <Switch
           bind:checked={removeoverflow}
           bind:value={removeoverflow}
           on:change={updateValues}>
           Remove overflow
-        </Switch>
+        </Switch> -->
 
-        <button on:click={placeAction}>Create Grid</button>
-        <button on:click={updateValues}>Update</button>
+        <div class="flex">
+          <Button class="mr-xxsmall" on:click={placeAction}>Create Grid</Button>
+          <Button variant="secondary" on:click={updateValues}>Update</Button>
+        </div>
       </div>
       <div class="flex p-large" />
     </div>

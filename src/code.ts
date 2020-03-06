@@ -25,6 +25,8 @@ function getSelectionDimension() {
   if (figma.currentPage.selection.length === 0) {
     figma.ui.postMessage({ type: "noinstance" });
   } else {
+    fetchPluginData(figma.currentPage.selection[0])
+
     figma.ui.postMessage({
       type: "selection"
     });
@@ -45,17 +47,40 @@ function supportsChildren(
 
 function updateValues(msg) {
   console.log({ msg });
-  columnCount = msg.columns;
-  rowCount = msg.rows;
-  cellPadding = msg.gap;
-  shouldAutoFlow = msg.autoflow;
-  shouldRemoveOverflow = msg.removeoverflow;
+  columnCount = msg.columnCount;
+  rowCount = msg.rowCount;
+  cellPadding = msg.cellPadding;
+  shouldAutoFlow = msg.shouldAutoFlow;
+  shouldRemoveOverflow = msg.shouldRemoveOverflow;
+}
+
+function fetchPluginData(node) {
+  let previousValues = node.getPluginData("values");
+  if (previousValues) {
+    let parsedValues = JSON.parse(previousValues);
+    console.log({ parsedValues });
+    updateValues(parsedValues);
+  }
 }
 
 function reflow() {
   let childNodes = [];
-  const grid = figma.currentPage.findAll(n => n.name === "Grid")[0];
+  const grid = figma.currentPage.selection[0];
+
+  // const grid = figma.currentPage.findAll(n => n.name === "Grid")[0];
   if (!grid) return;
+  fetchPluginData(grid)
+
+  grid.setPluginData(
+    "values",
+    JSON.stringify({
+      rowCount,
+      columnCount,
+      cellPadding,
+      shouldAutoFlow
+    })
+  );
+  grid.setRelaunchData({ edit: "Edit this trapezoid with Shaper", open: "" });
   if (supportsChildren(grid)) {
     if (grid.type === "FRAME") {
       grid.itemSpacing = cellPadding;
@@ -72,27 +97,20 @@ function reflow() {
     if (shouldRemoveOverflow) {
       childNodes.splice(0, rowCount * columnCount);
     }
-    // TODO: Instead of creating a new row, reuse existing rows
-
     var rowCounter: number = 0;
     for (var index in rows) {
       const row = rows[index];
       if (row.type === "FRAME") {
         row.itemSpacing = cellPadding;
       }
-      console.log("start of row", index);
       if (supportsChildren(row)) {
         for (rowCounter; rowCounter < columnCount; rowCounter++) {
           if (childNodes.length) {
-            console.log("Appending child to row");
             row.appendChild(childNodes[0]);
             childNodes.shift();
-            console.log(
-              "Removing child node, remaining children:",
-              childNodes.length
-            );
           }
         }
+        rowCounter = 0;
       }
     }
 
@@ -144,6 +162,7 @@ function createGrid() {
   grid.name = "Grid";
   grid.itemSpacing = cellPadding;
   grid.backgrounds = [];
+  grid.setRelaunchData({ edit: "Edit this trapezoid with Shaper", open: "" });
   return grid;
 }
 

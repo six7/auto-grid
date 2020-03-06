@@ -1,6 +1,8 @@
 <script>
   import { createEventDispatcher } from "svelte";
 
+  import { Icon } from "figma-plugin-ds-svelte";
+
   const dispatch = createEventDispatcher();
 
   export let id = null;
@@ -133,22 +135,19 @@
 </style>
 
 {#if iconName || iconText}
-  <div class="input-icon">
-    <div class="input-icon__icon">
-      <div
-        class="icon icon--angle icon--black-3"
-        style="color: var(--black-3); fill: var(--black-3)" />
-
+  <div class="input {className}">
+    <div class="icon">
+      <Icon {iconName} {iconText} {spin} color="black3" />
     </div>
     <input
-      bind:value
+      bind:value={value}
       type="type"
       {id}
       {name}
       {disabled}
       {placeholder}
-      class="input-icon__input"
-      class:borders
+      class="indent"
+      class:borders={borders}
       on:input={handleInput}
       on:change={handleChange} />
   </div>
