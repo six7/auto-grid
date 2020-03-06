@@ -25,15 +25,15 @@ function getSelectionDimension() {
   if (figma.currentPage.selection.length === 0) {
     figma.ui.postMessage({ type: "noinstance" });
   } else {
-    let pluginValues = fetchPluginData(figma.currentPage.selection[0])
+    let pluginValues = fetchPluginData(figma.currentPage.selection[0]);
     if (pluginValues) {
       figma.ui.postMessage({
         type: "selection",
-        values: pluginValues,
+        values: pluginValues
       });
     } else {
       figma.ui.postMessage({
-        type: "selection",
+        type: "selection"
       });
     }
   }
@@ -84,8 +84,22 @@ function updatePluginData(node) {
 
 function reflow() {
   let childNodes = [];
-  const selection = figma.currentPage.selection;
-  const grid = selection.filter(n => n.name === "Grid")[0]
+  let grid;
+  // const selection = figma.currentPage.selection;
+  // const grid = selection.filter(n => n.name === "Grid")[0];
+  let selection = figma.currentPage.selection[0];
+    let gridNodes = figma.currentPage.findAll(n => n.name === "Grid");
+    console.log({gridNodes})
+    for (const gridItem of gridNodes) {
+      if (supportsChildren(gridItem)) {
+        let hit = gridItem.findAll(n => n.id === selection.id)
+        if (hit) {
+          grid = gridItem;
+        } else {
+          grid = undefined;
+        }
+      }
+    }
   // Todo: Only set plugin values on the root grid item
   // Todo: Only perform reflow on layers that have AutoGrid as a parent node
   if (!grid) return;
@@ -238,7 +252,7 @@ figma.ui.onmessage = msg => {
     }
     parent.appendChild(grid);
     updatePluginData(grid);
-    grid.setRelaunchData({ edit: `${rowCount} x ${columnCount}` });  
+    grid.setRelaunchData({ edit: `${rowCount} x ${columnCount}` });
 
     figma.currentPage.selection = [grid];
     figma.viewport.scrollAndZoomIntoView([grid]);
