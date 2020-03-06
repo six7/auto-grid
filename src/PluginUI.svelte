@@ -15,21 +15,21 @@
   import { Button, Label, SelectMenu, Switch } from "figma-plugin-ds-svelte";
 
   var disabled = false;
-  var rows = 2;
-  var columns = 2;
-  var gap = 8;
-  var autoflow = false;
-  var removeoverflow = false;
+  var rowCount = 2;
+  var columnCount = 2;
+  var cellPadding = 8;
+  var shouldAutoFlow = false;
+  var shouldRemoveOverflow = false;
 
   //this is a reactive variable that will return false when a value is selected from
   //the select menu, its value is bound to the primary buttons disabled prop
 
   $: values = {
-    rowCount: Number(rows),
-    columnCount: Number(columns),
-    cellPadding: Number(gap),
-    shouldAutoFlow: Boolean(autoflow),
-    shouldRemoveOverflow: Boolean(removeoverflow)
+    rowCount: Number(rowCount),
+    columnCount: Number(columnCount),
+    cellPadding: Number(cellPadding),
+    shouldAutoFlow: Boolean(shouldAutoFlow),
+    shouldRemoveOverflow: Boolean(shouldRemoveOverflow)
   };
 
   function placeAction() {
@@ -45,7 +45,6 @@
   }
 
   function updateValues() {
-    console.log("af", values.autoflow);
     parent.postMessage(
       {
         pluginMessage: {
@@ -80,6 +79,12 @@
   onmessage = event => {
     if (event.data.pluginMessage.type === "selection") {
       disabled = false;
+      if (event.data.pluginMessage.values) {
+        rowCount = event.data.pluginMessage.values.rowCount;
+        columnCount = event.data.pluginMessage.values.columnCount;
+        cellPadding = event.data.pluginMessage.values.cellPadding;
+        shouldAutoFlow = event.data.pluginMessage.values.shouldAutoFlow;
+      }
     } else if (event.data.pluginMessage.type === "noinstance") {
       disabled = true;
     }
@@ -99,36 +104,33 @@
   <fieldset {disabled}>
     <div class="flex row">
       <div class="flex column">
-        <Label>Rows</Label>
         <Input
-          name="rows"
+          name="rowCount"
           iconName={IconLayoutGridRows}
-          bind:value={rows}
+          bind:value={rowCount}
           on:change={updateValues}
           class="mb-xxsmall" />
-        <Label>columns</Label>
         <Input
-          name="columns"
+          name="columnCount"
           iconName={IconLayoutGridColumns}
-          bind:value={columns}
+          bind:value={columnCount}
           on:change={updateValues}
           class="mb-xxsmall" />
-        <Label>Gap</Label>
         <Input
-          name="gap"
+          name="cellPadding"
           iconName={IconArrowLeftRight}
-          bind:value={gap}
+          bind:value={cellPadding}
           on:change={updateValues}
           class="mb-xxsmall" />
         <Switch
-          bind:checked={autoflow}
-          bind:value={autoflow}
+          bind:checked={shouldAutoFlow}
+          bind:value={shouldAutoFlow}
           on:change={updateValues}>
           Autoflow
         </Switch>
         <!-- <Switch
-          bind:checked={removeoverflow}
-          bind:value={removeoverflow}
+          bind:checked={shouldRemoveOverflow}
+          bind:value={shouldRemoveOverflow}
           on:change={updateValues}>
           Remove overflow
         </Switch> -->

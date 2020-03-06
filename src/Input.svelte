@@ -9,7 +9,7 @@
   export let value = null;
   export let name = null;
   export let iconText = null;
-  export let borders = false;
+  export let borders = true;
   export let disabled = false;
   export let iconName = null;
   export let spin = false;
@@ -28,6 +28,7 @@
 </script>
 
 <style>
+
   .input {
     position: relative;
   }
@@ -140,14 +141,14 @@
       <Icon {iconName} {iconText} {spin} color="black3" />
     </div>
     <input
-      bind:value={value}
+      bind:value
       type="type"
       {id}
       {name}
       {disabled}
       {placeholder}
       class="indent"
-      class:borders={borders}
+      class:borders
       on:input={handleInput}
       on:change={handleChange} />
   </div>
