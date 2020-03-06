@@ -59,12 +59,9 @@ function reflow() {
       for (var index in rows) {
         const row = rows[index]
         console.log("start of row", index)
-        row.name = `row ${index}`
-        console.log({childNodes})
-        console.log({childNodes: childNodes.length, row: row.name})
         if (supportsChildren(row)) {
-          if (childNodes.length) {
-            for (rowCounter; rowCounter < 4; rowCounter++) {
+          for (rowCounter; rowCounter < 4; rowCounter++) {
+            if (childNodes.length) {
               console.log("Appending child to row")
               row.appendChild(childNodes[0])
               childNodes.shift()
