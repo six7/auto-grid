@@ -15,8 +15,11 @@
   export { className as class };
 
   const handleInput = e => {
-    console.log("change", e);
     dispatch("input", e.target);
+  };
+
+  const handleChange = e => {
+    dispatch("change", e.target);
   };
 
   let className = "";
@@ -146,7 +149,8 @@
       {placeholder}
       class="input-icon__input"
       class:borders
-      on:input={handleInput} />
+      on:input={handleInput}
+      on:change={handleChange} />
   </div>
 {:else}
   <div class="input {className}">
@@ -158,6 +162,7 @@
       {disabled}
       {placeholder}
       class:borders
-      on:input={handleInput} />
+      on:input={handleInput}
+      on:change={handleChange} />
   </div>
 {/if}

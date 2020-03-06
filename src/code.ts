@@ -11,120 +11,201 @@ figma.showUI(__html__, {
   height: 230
 });
 
-figma.on("selectionchange", () => {
-  getSelectionDimension();
-  reflow();
-});
-
 // Calls to "parent.postMessage" from within the HTML page will trigger this
 // callback. The callback will be passed the "pluginMessage" property of the
 // posted message.
+
+var rowCount = 1;
+var columnCount = 1;
+var cellPadding = 8;
+var shouldAutoFlow = false;
+var shouldRemoveOverflow = false;
 
 function getSelectionDimension() {
   if (figma.currentPage.selection.length === 0) {
     figma.ui.postMessage({ type: "noinstance" });
   } else {
     figma.ui.postMessage({
-      type: "selection",
+      type: "selection"
     });
   }
-};
+}
 
-function supportsChildren(node: SceneNode):
-  node is FrameNode | ComponentNode | InstanceNode | BooleanOperationNode
-{
-  return node.type === 'FRAME' || node.type === 'GROUP' ||
-         node.type === 'COMPONENT' || node.type === 'INSTANCE' ||
-         node.type === 'BOOLEAN_OPERATION'
+function supportsChildren(
+  node: SceneNode
+): node is FrameNode | ComponentNode | InstanceNode | BooleanOperationNode {
+  return (
+    node.type === "FRAME" ||
+    node.type === "GROUP" ||
+    node.type === "COMPONENT" ||
+    node.type === "INSTANCE" ||
+    node.type === "BOOLEAN_OPERATION"
+  );
+}
+
+function updateValues(msg) {
+  console.log({ msg });
+  columnCount = msg.columns;
+  rowCount = msg.rows;
+  cellPadding = msg.gap;
+  shouldAutoFlow = msg.autoflow;
+  shouldRemoveOverflow = msg.removeoverflow;
 }
 
 function reflow() {
-  if (figma.currentPage.selection.length === 0) {
-    figma.ui.postMessage({ type: "noinstance" });
-  } else {
-    let childNodes = []
-    const gridFrames = figma.currentPage.findAll(n => n.name === "Grid")[0]
-    if (!gridFrames) return;
-    if (supportsChildren(gridFrames)) {
-      // Inside this if statement, selection always has .children property
-      let rows = gridFrames.children
-      for (const row of rows) {
-        if (supportsChildren(row)) {
-          for (const child of row.children) {
-            childNodes.push(child)
-          }
+  let childNodes = [];
+  const grid = figma.currentPage.findAll(n => n.name === "Grid")[0];
+  if (!grid) return;
+  if (supportsChildren(grid)) {
+    if (grid.type === "FRAME") {
+      grid.itemSpacing = cellPadding;
+    }
+    let rows = grid.children;
+    for (const row of rows) {
+      if (supportsChildren(row)) {
+        for (const child of row.children) {
+          childNodes.push(child);
         }
-      }
-      var rowCounter:number = 0;
-      for (var index in rows) {
-        const row = rows[index]
-        console.log("start of row", index)
-        if (supportsChildren(row)) {
-          for (rowCounter; rowCounter < 4; rowCounter++) {
-            if (childNodes.length) {
-              console.log("Appending child to row")
-              row.appendChild(childNodes[0])
-              childNodes.shift()
-              console.log("Removing child node, remaining children:", childNodes.length)
-            }
-          }
-          if (row.children.length === 0) row.remove();
-        }
-        console.log("end of row", index)
-        rowCounter = 0;
       }
     }
 
+    if (shouldRemoveOverflow) {
+      childNodes.splice(0, rowCount * columnCount);
+    }
+    // TODO: Instead of creating a new row, reuse existing rows
 
-    return;
+    var rowCounter: number = 0;
+    for (var index in rows) {
+      const row = rows[index];
+      if (row.type === "FRAME") {
+        row.itemSpacing = cellPadding;
+      }
+      console.log("start of row", index);
+      if (supportsChildren(row)) {
+        for (rowCounter; rowCounter < columnCount; rowCounter++) {
+          if (childNodes.length) {
+            console.log("Appending child to row");
+            row.appendChild(childNodes[0]);
+            childNodes.shift();
+            console.log(
+              "Removing child node, remaining children:",
+              childNodes.length
+            );
+          }
+        }
+      }
+    }
+
+    if (childNodes.length > 0) {
+      var i,
+        j,
+        temparray,
+        chunk = columnCount;
+      for (i = 0, j = childNodes.length; i < j; i += chunk) {
+        temparray = childNodes.slice(i, i + chunk);
+        const newRow = createRow();
+        temparray.map(node => {
+          newRow.appendChild(node);
+        });
+        grid.appendChild(newRow);
+      }
+    }
+
+    if (shouldRemoveOverflow) {
+      for (const child of childNodes) {
+        child.remove();
+      }
+    }
+
+    for (const row of rows) {
+      if (supportsChildren(row)) {
+        if (row.children.length === 0) row.remove();
+      }
+    }
   }
-};
+
+  return;
+}
+
+function createRow() {
+  const frame = figma.createFrame();
+  frame.layoutMode = "HORIZONTAL";
+  frame.counterAxisSizingMode = "AUTO";
+  frame.name = "Row";
+  frame.itemSpacing = cellPadding;
+  frame.backgrounds = [];
+  return frame;
+}
+
+function createGrid() {
+  const grid = figma.createFrame();
+  grid.layoutMode = "VERTICAL";
+  grid.counterAxisSizingMode = "AUTO";
+  grid.name = "Grid";
+  grid.itemSpacing = cellPadding;
+  grid.backgrounds = [];
+  return grid;
+}
 
 getSelectionDimension();
+
+figma.on("selectionchange", () => {
+  getSelectionDimension();
+  if (shouldAutoFlow) {
+    reflow();
+  }
+});
 
 figma.ui.onmessage = msg => {
   // One way of distinguishing between different types of messages sent from
   // your HTML page is to use an object with a "type" property like this.
 
-  console.log("type", msg.type);
+  if (msg.type === "initiate") {
+    updateValues(msg);
+    if (shouldAutoFlow) {
+      reflow();
+    }
+    return;
+  }
 
+  if (msg.type === "update") {
+    updateValues(msg);
+    if (shouldAutoFlow) {
+      reflow();
+    }
+    return;
+  }
 
   if (msg.type === "place") {
-    const { rows, columns, gap } = msg;
-    const selection = figma.currentPage.selection[0]
-    if (!selection) { return }
-    const parent = selection.parent
-    const frame = figma.createFrame()
-    frame.layoutMode = "HORIZONTAL";
-    frame.counterAxisSizingMode = "AUTO";
-    frame.name = "Row"
-    frame.itemSpacing = gap;
-    frame.appendChild(selection)
-    var nodes = []
-    for(var counter:number = 1; counter < columns; counter++) {
+    updateValues(msg);
+    const selection = figma.currentPage.selection[0];
+    if (!selection) {
+      return;
+    }
+    const parent = selection.parent;
+    const frame = createRow();
+    frame.appendChild(selection);
+    var nodes = [];
+    for (var counter: number = 1; counter < columnCount; counter++) {
       let copy = selection.clone();
-      frame.appendChild(copy)
+      frame.appendChild(copy);
     }
-    nodes.push(frame)
-    for(var counter:number = 1; counter < rows; counter++) {
+    nodes.push(frame);
+    for (var counter: number = 1; counter < rowCount; counter++) {
       let copy = frame.clone();
-      frame.parent.appendChild(copy)
-      nodes.push(copy)
+      frame.parent.appendChild(copy);
+      nodes.push(copy);
     }
-    figma.currentPage.selection = nodes
-    const grid = figma.createFrame()
-    grid.layoutMode = "VERTICAL";
-    grid.counterAxisSizingMode = "AUTO";
-    grid.name = "Grid"
-    grid.itemSpacing = gap;
+    figma.currentPage.selection = nodes;
+    const grid = createGrid();
 
-    for(const node of nodes) {
-      grid.appendChild(node)
+    for (const node of nodes) {
+      grid.appendChild(node);
     }
-    parent.appendChild(grid)
+    parent.appendChild(grid);
 
     figma.currentPage.selection = [grid];
-    figma.viewport.scrollAndZoomIntoView([grid])
+    figma.viewport.scrollAndZoomIntoView([grid]);
     return;
   }
 
