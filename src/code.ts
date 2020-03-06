@@ -13,6 +13,7 @@ figma.showUI(__html__, {
 
 figma.on("selectionchange", () => {
   getSelectionDimension();
+  reflow();
 });
 
 // Calls to "parent.postMessage" from within the HTML page will trigger this
@@ -29,6 +30,59 @@ function getSelectionDimension() {
   }
 };
 
+function supportsChildren(node: SceneNode):
+  node is FrameNode | ComponentNode | InstanceNode | BooleanOperationNode
+{
+  return node.type === 'FRAME' || node.type === 'GROUP' ||
+         node.type === 'COMPONENT' || node.type === 'INSTANCE' ||
+         node.type === 'BOOLEAN_OPERATION'
+}
+
+function reflow() {
+  if (figma.currentPage.selection.length === 0) {
+    figma.ui.postMessage({ type: "noinstance" });
+  } else {
+    let childNodes = []
+    const gridFrames = figma.currentPage.findAll(n => n.name === "Grid")[0]
+    if (!gridFrames) return;
+    if (supportsChildren(gridFrames)) {
+      // Inside this if statement, selection always has .children property
+      let rows = gridFrames.children
+      for (const row of rows) {
+        if (supportsChildren(row)) {
+          for (const child of row.children) {
+            childNodes.push(child)
+          }
+        }
+      }
+      var rowCounter:number = 0;
+      for (var index in rows) {
+        const row = rows[index]
+        console.log("start of row", index)
+        row.name = `row ${index}`
+        console.log({childNodes})
+        console.log({childNodes: childNodes.length, row: row.name})
+        if (supportsChildren(row)) {
+          if (childNodes.length) {
+            for (rowCounter; rowCounter < 4; rowCounter++) {
+              console.log("Appending child to row")
+              row.appendChild(childNodes[0])
+              childNodes.shift()
+              console.log("Removing child node, remaining children:", childNodes.length)
+            }
+          }
+          if (row.children.length === 0) row.remove();
+        }
+        console.log("end of row", index)
+        rowCounter = 0;
+      }
+    }
+
+
+    return;
+  }
+};
+
 getSelectionDimension();
 
 figma.ui.onmessage = msg => {
@@ -36,18 +90,22 @@ figma.ui.onmessage = msg => {
   // your HTML page is to use an object with a "type" property like this.
 
   console.log("type", msg.type);
+
+
   if (msg.type === "place") {
     const { rows, columns, gap } = msg;
-    const {selection} = figma.currentPage
-    const node = selection[0]
+    const selection = figma.currentPage.selection[0]
+    if (!selection) { return }
+    const parent = selection.parent
     const frame = figma.createFrame()
     frame.layoutMode = "HORIZONTAL";
     frame.counterAxisSizingMode = "AUTO";
+    frame.name = "Row"
     frame.itemSpacing = gap;
-    frame.appendChild(node)
+    frame.appendChild(selection)
     var nodes = []
     for(var counter:number = 1; counter < columns; counter++) {
-      let copy = node.clone();
+      let copy = selection.clone();
       frame.appendChild(copy)
     }
     nodes.push(frame)
@@ -60,13 +118,16 @@ figma.ui.onmessage = msg => {
     const grid = figma.createFrame()
     grid.layoutMode = "VERTICAL";
     grid.counterAxisSizingMode = "AUTO";
+    grid.name = "Grid"
     grid.itemSpacing = gap;
 
     for(const node of nodes) {
       grid.appendChild(node)
     }
+    parent.appendChild(grid)
 
-    figma.viewport.scrollAndZoomIntoView(nodes)
+    figma.currentPage.selection = [grid];
+    figma.viewport.scrollAndZoomIntoView([grid])
     return;
   }
 
