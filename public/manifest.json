@@ -5,7 +5,6 @@
   "main": "code.js",
   "ui": "index.html",
   "relaunchButtons": [
-    {"command": "edit", "name": "Autogrid"},
-    {"command": "open", "name": "Open Shaper", "multipleSelection": true}
+    {"command": "edit", "name": "Autogrid"}
   ]
 }
