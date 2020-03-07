@@ -94,8 +94,7 @@ function findParent(selection) {
 function reflow(grid, values) {
   const { cellPadding, rowCount, columnCount } = values;
   grid.setRelaunchData({
-    edit: `${rowCount} x ${columnCount}`,
-    run: `${rowCount} x ${columnCount}`
+    edit: `${rowCount} x ${columnCount}`
   });
   let shouldRemoveOverflow = false;
   if (supportsChildren(grid)) {
@@ -312,8 +311,7 @@ figma.ui.onmessage = msg => {
     parent.appendChild(grid);
     updatePluginData(grid, msg);
     grid.setRelaunchData({
-      edit: `${rowCount} x ${columnCount}`,
-      run: `${rowCount} x ${columnCount}`
+      edit: `${rowCount} x ${columnCount}`
     });
 
     figma.currentPage.selection = [grid];
