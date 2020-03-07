@@ -11,7 +11,7 @@ figma.showUI(__html__, {
   height: 220
 });
 
-var shouldAutoFlow = false;
+var shouldAutoFlow = true;
 
 // Calls to "parent.postMessage" from within the HTML page will trigger this
 // callback. The callback will be passed the "pluginMessage" property of the
@@ -19,6 +19,7 @@ var shouldAutoFlow = false;
 
 function sendPluginValues(node) {
   let pluginValues = fetchPluginData(node);
+  console.log({ pluginValues });
   if (pluginValues) {
     notifySelection(pluginValues);
   } else {
@@ -59,13 +60,16 @@ function updatePluginData(node, values) {
 function updateGrids() {
   if (!shouldAutoFlow) return;
 
-  let gridNodes = figma.currentPage.findAll(n => n.name === "Grid");
+  let gridNodes = figma.currentPage.findAll(n => {
+    if (supportsChildren(n)) {
+      let pluginData = n.getPluginData("values");
+      if (pluginData && n.children.length) return true;
+    }
+  });
   if (!gridNodes.length) {
-    console.log("No other nodes found");
     return;
   }
   for (const grid of gridNodes) {
-    console.log({ grid });
     reflow(grid, fetchPluginData(grid));
   }
 }
@@ -74,7 +78,7 @@ function findParent(selection) {
   let parent;
   function traverse(node) {
     if (node.type !== "DOCUMENT") {
-      if (node.name === "Grid") {
+      if (node.getPluginData("values")) {
         parent = node;
         return;
       }
@@ -187,10 +191,11 @@ function notifyNoSelection() {
   });
 }
 
-function notifySelection(values = {}) {
+function notifySelection(values = undefined) {
+  console.log({ values });
   figma.ui.postMessage({
     type: "selection",
-    ...values
+    values
   });
 }
 
@@ -232,8 +237,17 @@ figma.ui.onmessage = msg => {
     return;
   }
 
+  if (msg.type === "manualupdate") {
+    let node = figma.currentPage.selection[0];
+    if (!node) return;
+    let grid = findParent(node);
+    if (!grid) return;
+    updatePluginData(grid, msg);
+    reflow(grid, msg);
+    return;
+  }
+
   if (msg.type === "update") {
-    console.log({ msg });
     shouldAutoFlow = msg.shouldAutoFlow;
     let node = figma.currentPage.selection[0];
     if (!node) {

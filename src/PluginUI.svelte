@@ -15,10 +15,11 @@
   import { Button, Label, SelectMenu, Switch } from "figma-plugin-ds-svelte";
 
   var disabled = false;
+  var notExisting = true;
   var rowCount = 2;
   var columnCount = 2;
   var cellPadding = 8;
-  var shouldAutoFlow = false;
+  var shouldAutoFlow = true;
   var shouldRemoveOverflow = false;
 
   //this is a reactive variable that will return false when a value is selected from
@@ -55,6 +56,17 @@
       "*"
     );
   }
+  function manualUpdateValues() {
+    parent.postMessage(
+      {
+        pluginMessage: {
+          type: "manualupdate",
+          ...values
+        }
+      },
+      "*"
+    );
+  }
 
   function initiate() {
     parent.postMessage(
@@ -83,9 +95,13 @@
         rowCount = event.data.pluginMessage.values.rowCount;
         columnCount = event.data.pluginMessage.values.columnCount;
         cellPadding = event.data.pluginMessage.values.cellPadding;
+        notExisting = false;
+      } else {
+        notExisting = true;
       }
     } else if (event.data.pluginMessage.type === "noselection") {
       disabled = true;
+      notExisting = true;
     } else if (event.data.pluginMessage.type === "initiate") {
       shouldAutoFlow = event.data.pluginMessage.values.cellPadding;
     }
@@ -123,10 +139,11 @@
       class="mb-xxsmall" />
   </fieldset>
   <Switch
+    class="mb-xxsmall"
     bind:checked={shouldAutoFlow}
     bind:value={shouldAutoFlow}
     on:change={updateValues}>
-    Autoflow
+    Auto-Update
   </Switch>
   <!-- <Switch
           bind:checked={shouldRemoveOverflow}
@@ -136,8 +153,8 @@
         </Switch> -->
   <fieldset {disabled}>
     <div class="flex">
-      <Button class="mr-xxsmall" on:click={placeAction}>Create Grid</Button>
-      <Button variant="secondary" on:click={updateValues}>Update</Button>
+      <Button class="mr-xxsmall" on:click={placeAction}>Create new Grid</Button>
+      <Button variant="secondary" bind:disabled={notExisting} on:click={manualUpdateValues}>Update</Button>
     </div>
   </fieldset>
 </div>
