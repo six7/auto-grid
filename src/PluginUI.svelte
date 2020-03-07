@@ -4,15 +4,19 @@
   //contains Figma color vars, spacing vars, utility classes and more
   import { GlobalCSS } from "figma-plugin-ds-svelte";
   import Input from "./Input.svelte";
-  import {
-    Icon,
-    IconLayoutGridColumns,
-    IconLayoutGridRows,
-    IconArrowLeftRight
-  } from "figma-plugin-ds-svelte";
+  import Padding from "./padding.svg";
+  import Horizontal from "./horizontal.svg";
+  import Vertical from "./vertical.svg";
 
   //import some Svelte Figma UI components
-  import { Button, Label, SelectMenu, Switch } from "figma-plugin-ds-svelte";
+  import {
+    Button,
+    Icon,
+    Label,
+    Type,
+    SelectMenu,
+    Switch
+  } from "figma-plugin-ds-svelte";
 
   var disabled = false;
   var notExisting = true;
@@ -21,6 +25,7 @@
   var cellPadding = 8;
   var shouldAutoFlow = true;
   var shouldRemoveOverflow = false;
+  var gridNode = undefined;
 
   //this is a reactive variable that will return false when a value is selected from
   //the select menu, its value is bound to the primary buttons disabled prop
@@ -32,6 +37,7 @@
     shouldAutoFlow: Boolean(shouldAutoFlow),
     shouldRemoveOverflow: Boolean(shouldRemoveOverflow)
   };
+  $: updateDisabled = notExisting || shouldAutoFlow;
 
   function placeAction() {
     parent.postMessage(
@@ -84,6 +90,13 @@
     parent.postMessage({ pluginMessage: { type: "cancel" } }, "*");
   }
 
+  function goToParent() {
+    parent.postMessage(
+      { pluginMessage: { type: "gotoparent", id: gridNode } },
+      "*"
+    );
+  }
+
   onMount(() => {
     initiate();
   });
@@ -95,12 +108,16 @@
         rowCount = event.data.pluginMessage.values.rowCount;
         columnCount = event.data.pluginMessage.values.columnCount;
         cellPadding = event.data.pluginMessage.values.cellPadding;
+        gridNode = event.data.pluginMessage.node;
+        console.log({ gridNode });
         notExisting = false;
       } else {
+        gridNode = false;
         notExisting = true;
       }
     } else if (event.data.pluginMessage.type === "noselection") {
       disabled = true;
+      gridNode = false;
       notExisting = true;
     } else if (event.data.pluginMessage.type === "initiate") {
       shouldAutoFlow = event.data.pluginMessage.values.cellPadding;
@@ -118,28 +135,52 @@
 </style>
 
 <div class="wrapper p-xxsmall">
-  <fieldset {disabled}>
+  <div
+    class="mb-xxsmall flex justify-content-between align-items-center"
+    style="min-height: 25px;">
+    {#if gridNode}
+      <Type weight="bold" size="small">Found existing AutoGrid</Type>
+      <button
+        on:click={goToParent}
+        class="p-xxxsmall"
+        style="border: 0; border-radius: 3px; background: rgba(24, 145, 251,
+        0.2)">
+        <Type weight="bold">Go to</Type>
+      </button>
+    {:else if disabled}
+      <Type weight="bold" size="small">Select something to start.</Type>
+    {:else}
+      <Type weight="bold" size="small">Configure your new AutoGrid</Type>
+    {/if}
+  </div>
+
+  <div class="flex justify-content-between">
     <Input
+      {disabled}
       name="rowCount"
-      iconName={IconLayoutGridRows}
+      type="number"
+      iconName={Vertical}
       bind:value={rowCount}
       on:change={updateValues}
-      class="mb-xxsmall" />
+      class="mr-xxsmall" />
     <Input
+      {disabled}
+      type="number"
       name="columnCount"
-      iconName={IconLayoutGridColumns}
+      iconName={Horizontal}
       bind:value={columnCount}
       on:change={updateValues}
-      class="mb-xxsmall" />
+      class="mr-xxsmall" />
     <Input
+      {disabled}
+      type="number"
       name="cellPadding"
-      iconName={IconArrowLeftRight}
+      iconName={Padding}
       bind:value={cellPadding}
-      on:change={updateValues}
-      class="mb-xxsmall" />
-  </fieldset>
+      on:change={updateValues} />
+  </div>
   <Switch
-    class="mb-xxsmall"
+    class="mt-xxsmall mb-xxsmall"
     bind:checked={shouldAutoFlow}
     bind:value={shouldAutoFlow}
     on:change={updateValues}>
@@ -154,7 +195,12 @@
   <fieldset {disabled}>
     <div class="flex">
       <Button class="mr-xxsmall" on:click={placeAction}>Create new Grid</Button>
-      <Button variant="secondary" bind:disabled={notExisting} on:click={manualUpdateValues}>Update</Button>
+      <Button
+        variant="secondary"
+        bind:disabled={updateDisabled}
+        on:click={manualUpdateValues}>
+        Update
+      </Button>
     </div>
   </fieldset>
 </div>

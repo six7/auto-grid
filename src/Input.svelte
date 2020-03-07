@@ -28,7 +28,6 @@
 </script>
 
 <style>
-
   .input {
     position: relative;
   }
@@ -142,7 +141,7 @@
     </div>
     <input
       bind:value
-      type="type"
+      type="number"
       {id}
       {name}
       {disabled}
@@ -155,7 +154,7 @@
 {:else}
   <div class="input {className}">
     <input
-      type="input"
+      type="number"
       bind:value
       {id}
       {name}

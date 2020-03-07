@@ -8,7 +8,7 @@
 // This shows the HTML page in "ui.html".
 figma.showUI(__html__, {
   width: 250,
-  height: 220
+  height: 170
 });
 
 var shouldAutoFlow = true;
@@ -21,7 +21,7 @@ function sendPluginValues(node) {
   let pluginValues = fetchPluginData(node);
   console.log({ pluginValues });
   if (pluginValues) {
-    notifySelection(pluginValues);
+    notifySelection(node.id, pluginValues);
   } else {
     notifySelection();
   }
@@ -169,6 +169,7 @@ function createRow(values) {
   frame.layoutMode = "HORIZONTAL";
   frame.counterAxisSizingMode = "AUTO";
   frame.name = "Row";
+  frame.clipsContent = false;
   frame.itemSpacing = cellPadding;
   frame.backgrounds = [];
   return frame;
@@ -180,6 +181,7 @@ function createGrid(values) {
   grid.layoutMode = "VERTICAL";
   grid.counterAxisSizingMode = "AUTO";
   grid.name = "Grid";
+  grid.clipsContent = false;
   grid.itemSpacing = cellPadding;
   grid.backgrounds = [];
   return grid;
@@ -191,12 +193,17 @@ function notifyNoSelection() {
   });
 }
 
-function notifySelection(values = undefined) {
-  console.log({ values });
+function notifySelection(node = undefined, values = undefined) {
+  console.log({ values, node });
   figma.ui.postMessage({
     type: "selection",
+    node,
     values
   });
+}
+
+function checkSelection(node) {
+  console.log("node", node);
 }
 
 figma.on("selectionchange", () => {
@@ -209,6 +216,7 @@ figma.on("selectionchange", () => {
 
     return;
   }
+  checkSelection(node);
   let grid = findParent(node);
   if (!grid) {
     notifySelection();
@@ -222,6 +230,14 @@ figma.on("selectionchange", () => {
 figma.ui.onmessage = msg => {
   // One way of distinguishing between different types of messages sent from
   // your HTML page is to use an object with a "type" property like this.
+
+  if (msg.type === "gotoparent") {
+    console.log({msg})
+    let node = figma.currentPage.findOne(n => n.id === msg.id);
+    figma.currentPage.selection = [node];
+    figma.viewport.scrollAndZoomIntoView([node]);
+    return;
+  }
 
   if (msg.type === "initiate") {
     let node = figma.currentPage.selection[0];

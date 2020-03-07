@@ -5,7 +5,6 @@
   "main": "code.js",
   "ui": "index.html",
   "relaunchButtons": [
-    {"command": "edit", "name": "Configure Autogrid"},
-    {"command": "run", "name": "Run Autogrid"}
+    {"command": "edit", "name": "AutoGrid"}
   ]
 }
