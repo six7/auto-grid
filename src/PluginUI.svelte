@@ -85,7 +85,7 @@
         cellPadding = event.data.pluginMessage.values.cellPadding;
         shouldAutoFlow = event.data.pluginMessage.values.shouldAutoFlow;
       }
-    } else if (event.data.pluginMessage.type === "noinstance") {
+    } else if (event.data.pluginMessage.type === "noselection") {
       disabled = true;
     }
   };

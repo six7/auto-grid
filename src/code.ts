@@ -11,31 +11,23 @@ figma.showUI(__html__, {
   height: 220
 });
 
+var shouldAutoFlow = false;
+
 // Calls to "parent.postMessage" from within the HTML page will trigger this
 // callback. The callback will be passed the "pluginMessage" property of the
 // posted message.
 
-var rowCount = 1;
-var columnCount = 1;
-var cellPadding = 8;
-var shouldAutoFlow = false;
-var shouldRemoveOverflow = false;
-
-function getSelectionDimension() {
-  if (figma.currentPage.selection.length === 0) {
-    figma.ui.postMessage({ type: "noinstance" });
+function sendPluginValues(node) {
+  let pluginValues = fetchPluginData(node);
+  if (pluginValues) {
+    figma.ui.postMessage({
+      type: "selection",
+      values: pluginValues
+    });
   } else {
-    let pluginValues = fetchPluginData(figma.currentPage.selection[0]);
-    if (pluginValues) {
-      figma.ui.postMessage({
-        type: "selection",
-        values: pluginValues
-      });
-    } else {
-      figma.ui.postMessage({
-        type: "selection"
-      });
-    }
+    figma.ui.postMessage({
+      type: "selection"
+    });
   }
 }
 
@@ -51,65 +43,64 @@ function supportsChildren(
   );
 }
 
-function updateValues(msg) {
-  console.log({ msg });
-  columnCount = msg.columnCount;
-  rowCount = msg.rowCount;
-  cellPadding = msg.cellPadding;
-  shouldAutoFlow = msg.shouldAutoFlow;
-  shouldRemoveOverflow = msg.shouldRemoveOverflow;
-}
-
 function fetchPluginData(node) {
   let previousValues = node.getPluginData("values");
-  if (previousValues) {
-    let parsedValues = JSON.parse(previousValues);
-    console.log({ parsedValues });
-    updateValues(parsedValues);
-    return parsedValues;
-  }
+  if (!previousValues) return;
+  return JSON.parse(previousValues);
 }
 
-function updatePluginData(node) {
+function updatePluginData(node, values) {
+  const { rowCount, columnCount, cellPadding } = values;
   node.setPluginData(
     "values",
     JSON.stringify({
       rowCount,
       columnCount,
-      cellPadding,
-      shouldAutoFlow
+      cellPadding
     })
   );
 }
 
-function reflow() {
-  let childNodes = [];
-  let grid;
-  // const selection = figma.currentPage.selection;
-  // const grid = selection.filter(n => n.name === "Grid")[0];
-  let selection = figma.currentPage.selection[0];
-    let gridNodes = figma.currentPage.findAll(n => n.name === "Grid");
-    console.log({gridNodes})
-    for (const gridItem of gridNodes) {
-      if (supportsChildren(gridItem)) {
-        let hit = gridItem.findAll(n => n.id === selection.id)
-        if (hit) {
-          grid = gridItem;
-        } else {
-          grid = undefined;
-        }
+function updateGrids() {
+  if (!shouldAutoFlow) return;
+
+  let gridNodes = figma.currentPage.findAll(n => n.name === "Grid");
+  if (!gridNodes.length) {
+    console.log("No other nodes found");
+    return;
+  }
+  for (const grid of gridNodes) {
+    console.log({ grid });
+    reflow(grid, fetchPluginData(grid));
+  }
+}
+
+function findParent(selection) {
+  let parent;
+  function traverse(node) {
+    if (node.type !== "DOCUMENT") {
+      if (node.name === "Grid") {
+        parent = node;
+        return;
       }
+      traverse(node.parent);
+    } else {
+      return;
     }
-  // Todo: Only set plugin values on the root grid item
-  // Todo: Only perform reflow on layers that have AutoGrid as a parent node
-  if (!grid) return;
-  updatePluginData(grid);
-  grid.setRelaunchData({ edit: `${rowCount} x ${columnCount}` });
+  }
+  traverse(selection);
+  return parent;
+}
+
+function reflow(grid, values) {
+  const { cellPadding, rowCount, columnCount } = values;
+  let shouldRemoveOverflow = false;
   if (supportsChildren(grid)) {
-    if (grid.type === "FRAME") {
+    if ("itemSpacing" in grid) {
       grid.itemSpacing = cellPadding;
     }
-    let rows = grid.children;
+    let rows = grid.findChildren(n => n.name === "Row");
+    let childNodes = [];
     for (const row of rows) {
       if (supportsChildren(row)) {
         for (const child of row.children) {
@@ -145,7 +136,7 @@ function reflow() {
         chunk = columnCount;
       for (i = 0, j = childNodes.length; i < j; i += chunk) {
         temparray = childNodes.slice(i, i + chunk);
-        const newRow = createRow();
+        const newRow = createRow(values);
         temparray.map(node => {
           newRow.appendChild(node);
         });
@@ -169,7 +160,8 @@ function reflow() {
   return;
 }
 
-function createRow() {
+function createRow(values) {
+  const { cellPadding } = values;
   const frame = figma.createFrame();
   frame.layoutMode = "HORIZONTAL";
   frame.counterAxisSizingMode = "AUTO";
@@ -179,22 +171,31 @@ function createRow() {
   return frame;
 }
 
-function createGrid() {
+function createGrid(values) {
+  const { cellPadding } = values;
   const grid = figma.createFrame();
   grid.layoutMode = "VERTICAL";
   grid.counterAxisSizingMode = "AUTO";
   grid.name = "Grid";
   grid.itemSpacing = cellPadding;
   grid.backgrounds = [];
-  grid.setRelaunchData({ edit: "Edit this trapezoid with Shaper", open: "" });
   return grid;
 }
 
 figma.on("selectionchange", () => {
-  getSelectionDimension();
-  if (shouldAutoFlow) {
-    reflow();
+  console.log("Selection change");
+  // Todo: Handle case where no selection exists
+  let node = figma.currentPage.selection[0];
+  if (!node) {
+    console.log("Got no selection, should we update all grids?");
+    updateGrids();
+    return;
   }
+  let grid = findParent(node);
+  if (!grid) return;
+  sendPluginValues(grid);
+  if (!shouldAutoFlow) return;
+  reflow(grid, fetchPluginData(grid));
 });
 
 figma.ui.onmessage = msg => {
@@ -202,35 +203,44 @@ figma.ui.onmessage = msg => {
   // your HTML page is to use an object with a "type" property like this.
 
   if (msg.type === "initiate") {
-    console.log("Initiated");
-    getSelectionDimension();
-
-    if (shouldAutoFlow) {
-      reflow();
+    let node = figma.currentPage.selection[0];
+    if (!node) {
+      updateGrids();
+      return;
     }
+    let grid = findParent(node);
+    if (!grid) return;
+    sendPluginValues(grid);
+    if (!shouldAutoFlow) return;
+    reflow(grid, fetchPluginData(grid));
     return;
   }
 
   if (msg.type === "update") {
-    updateValues(msg);
-    const selection = figma.currentPage.selection[0];
-    if (!selection) {
+    console.log({ msg });
+    shouldAutoFlow = msg.shouldAutoFlow;
+    let node = figma.currentPage.selection[0];
+    if (!node) {
+      updateGrids();
       return;
     }
-    if (shouldAutoFlow) {
-      reflow();
-    }
+    let grid = findParent(node);
+    if (!grid) return;
+    updatePluginData(grid, msg);
+    console.log({ shouldAutoFlow });
+    if (!shouldAutoFlow) return;
+    reflow(grid, msg);
     return;
   }
 
   if (msg.type === "place") {
-    updateValues(msg);
+    const { rowCount, columnCount, cellPadding, shouldAutoFlow } = msg;
     const selection = figma.currentPage.selection[0];
     if (!selection) {
       return;
     }
     const parent = selection.parent;
-    const frame = createRow();
+    const frame = createRow(msg);
     frame.appendChild(selection);
     var nodes = [];
     for (var counter: number = 1; counter < columnCount; counter++) {
@@ -245,13 +255,13 @@ figma.ui.onmessage = msg => {
       nodes.push(copy);
     }
     figma.currentPage.selection = nodes;
-    const grid = createGrid();
+    const grid = createGrid(msg);
 
     for (const node of nodes) {
       grid.appendChild(node);
     }
     parent.appendChild(grid);
-    updatePluginData(grid);
+    updatePluginData(grid, msg);
     grid.setRelaunchData({ edit: `${rowCount} x ${columnCount}` });
 
     figma.currentPage.selection = [grid];
