@@ -14,6 +14,7 @@
     Icon,
     Label,
     Type,
+    Section,
     SelectMenu,
     Switch
   } from "figma-plugin-ds-svelte";
@@ -157,15 +158,15 @@
   <div class="flex justify-content-between">
     <Input
       {disabled}
+      placeholder="Rows"
       name="rowCount"
-      type="number"
       iconName={Vertical}
       bind:value={rowCount}
       on:change={updateValues}
       class="mr-xxsmall" />
     <Input
       {disabled}
-      type="number"
+      placeholder="Columns"
       name="columnCount"
       iconName={Horizontal}
       bind:value={columnCount}
@@ -173,7 +174,8 @@
       class="mr-xxsmall" />
     <Input
       {disabled}
-      type="number"
+      placeholder="Padding"
+      title="Padding"
       name="cellPadding"
       iconName={Padding}
       bind:value={cellPadding}

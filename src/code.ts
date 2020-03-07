@@ -231,7 +231,7 @@ figma.ui.onmessage = msg => {
   // your HTML page is to use an object with a "type" property like this.
 
   if (msg.type === "gotoparent") {
-    console.log({msg})
+    console.log({ msg });
     let node = figma.currentPage.findOne(n => n.id === msg.id);
     figma.currentPage.selection = [node];
     figma.viewport.scrollAndZoomIntoView([node]);
