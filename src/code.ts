@@ -20,14 +20,9 @@ var shouldAutoFlow = false;
 function sendPluginValues(node) {
   let pluginValues = fetchPluginData(node);
   if (pluginValues) {
-    figma.ui.postMessage({
-      type: "selection",
-      values: pluginValues
-    });
+    notifySelection(pluginValues);
   } else {
-    figma.ui.postMessage({
-      type: "selection"
-    });
+    notifySelection();
   }
 }
 
@@ -94,6 +89,10 @@ function findParent(selection) {
 
 function reflow(grid, values) {
   const { cellPadding, rowCount, columnCount } = values;
+  grid.setRelaunchData({
+    edit: `${rowCount} x ${columnCount}`,
+    run: `${rowCount} x ${columnCount}`
+  });
   let shouldRemoveOverflow = false;
   if (supportsChildren(grid)) {
     if ("itemSpacing" in grid) {
@@ -182,17 +181,34 @@ function createGrid(values) {
   return grid;
 }
 
+function notifyNoSelection() {
+  figma.ui.postMessage({
+    type: "noselection"
+  });
+}
+
+function notifySelection(values = {}) {
+  figma.ui.postMessage({
+    type: "selection",
+    ...values
+  });
+}
+
 figma.on("selectionchange", () => {
   console.log("Selection change");
-  // Todo: Handle case where no selection exists
   let node = figma.currentPage.selection[0];
   if (!node) {
     console.log("Got no selection, should we update all grids?");
+    notifyNoSelection();
     updateGrids();
+
     return;
   }
   let grid = findParent(node);
-  if (!grid) return;
+  if (!grid) {
+    notifySelection();
+    return;
+  }
   sendPluginValues(grid);
   if (!shouldAutoFlow) return;
   reflow(grid, fetchPluginData(grid));
@@ -239,6 +255,7 @@ figma.ui.onmessage = msg => {
     if (!selection) {
       return;
     }
+    const { x, y } = selection;
     const parent = selection.parent;
     const frame = createRow(msg);
     frame.appendChild(selection);
@@ -260,9 +277,14 @@ figma.ui.onmessage = msg => {
     for (const node of nodes) {
       grid.appendChild(node);
     }
+    grid.x = x;
+    grid.y = y;
     parent.appendChild(grid);
     updatePluginData(grid, msg);
-    grid.setRelaunchData({ edit: `${rowCount} x ${columnCount}` });
+    grid.setRelaunchData({
+      edit: `${rowCount} x ${columnCount}`,
+      run: `${rowCount} x ${columnCount}`
+    });
 
     figma.currentPage.selection = [grid];
     figma.viewport.scrollAndZoomIntoView([grid]);

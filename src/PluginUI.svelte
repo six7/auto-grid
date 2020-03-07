@@ -83,10 +83,11 @@
         rowCount = event.data.pluginMessage.values.rowCount;
         columnCount = event.data.pluginMessage.values.columnCount;
         cellPadding = event.data.pluginMessage.values.cellPadding;
-        shouldAutoFlow = event.data.pluginMessage.values.shouldAutoFlow;
       }
     } else if (event.data.pluginMessage.type === "noselection") {
       disabled = true;
+    } else if (event.data.pluginMessage.type === "initiate") {
+      shouldAutoFlow = event.data.pluginMessage.values.cellPadding;
     }
   };
 </script>
@@ -102,45 +103,41 @@
 
 <div class="wrapper p-xxsmall">
   <fieldset {disabled}>
-    <div class="flex row">
-      <div class="flex column">
-        <Input
-          name="rowCount"
-          iconName={IconLayoutGridRows}
-          bind:value={rowCount}
-          on:change={updateValues}
-          class="mb-xxsmall" />
-        <Input
-          name="columnCount"
-          iconName={IconLayoutGridColumns}
-          bind:value={columnCount}
-          on:change={updateValues}
-          class="mb-xxsmall" />
-        <Input
-          name="cellPadding"
-          iconName={IconArrowLeftRight}
-          bind:value={cellPadding}
-          on:change={updateValues}
-          class="mb-xxsmall" />
-        <Switch
-          bind:checked={shouldAutoFlow}
-          bind:value={shouldAutoFlow}
-          on:change={updateValues}>
-          Autoflow
-        </Switch>
-        <!-- <Switch
+    <Input
+      name="rowCount"
+      iconName={IconLayoutGridRows}
+      bind:value={rowCount}
+      on:change={updateValues}
+      class="mb-xxsmall" />
+    <Input
+      name="columnCount"
+      iconName={IconLayoutGridColumns}
+      bind:value={columnCount}
+      on:change={updateValues}
+      class="mb-xxsmall" />
+    <Input
+      name="cellPadding"
+      iconName={IconArrowLeftRight}
+      bind:value={cellPadding}
+      on:change={updateValues}
+      class="mb-xxsmall" />
+  </fieldset>
+  <Switch
+    bind:checked={shouldAutoFlow}
+    bind:value={shouldAutoFlow}
+    on:change={updateValues}>
+    Autoflow
+  </Switch>
+  <!-- <Switch
           bind:checked={shouldRemoveOverflow}
           bind:value={shouldRemoveOverflow}
           on:change={updateValues}>
           Remove overflow
         </Switch> -->
-
-        <div class="flex">
-          <Button class="mr-xxsmall" on:click={placeAction}>Create Grid</Button>
-          <Button variant="secondary" on:click={updateValues}>Update</Button>
-        </div>
-      </div>
-      <div class="flex p-large" />
+  <fieldset {disabled}>
+    <div class="flex">
+      <Button class="mr-xxsmall" on:click={placeAction}>Create Grid</Button>
+      <Button variant="secondary" on:click={updateValues}>Update</Button>
     </div>
   </fieldset>
 </div>
