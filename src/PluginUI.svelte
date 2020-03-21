@@ -32,8 +32,8 @@
   //the select menu, its value is bound to the primary buttons disabled prop
 
   $: values = {
-    rowCount: Number(rowCount),
-    columnCount: Number(columnCount),
+    rowCount: Number(rowCount) > 50 ? 50 : Number(rowCount),
+    columnCount: Number(columnCount) > 50 ? 50 : Number(columnCount),
     cellPadding: Number(cellPadding),
     shouldAutoFlow: Boolean(shouldAutoFlow),
     shouldRemoveOverflow: Boolean(shouldRemoveOverflow)
@@ -110,7 +110,6 @@
         columnCount = event.data.pluginMessage.values.columnCount;
         cellPadding = event.data.pluginMessage.values.cellPadding;
         gridNode = event.data.pluginMessage.node;
-        console.log({ gridNode });
         notExisting = false;
       } else {
         gridNode = false;
@@ -160,6 +159,7 @@
       {disabled}
       placeholder="Rows"
       name="rowCount"
+      max="50"
       iconName={Vertical}
       bind:value={rowCount}
       on:change={updateValues}
@@ -168,6 +168,7 @@
       {disabled}
       placeholder="Columns"
       name="columnCount"
+      max="50"
       iconName={Horizontal}
       bind:value={columnCount}
       on:change={updateValues}
@@ -176,6 +177,7 @@
       {disabled}
       placeholder="Padding"
       title="Padding"
+      max="5000"
       name="cellPadding"
       iconName={Padding}
       bind:value={cellPadding}

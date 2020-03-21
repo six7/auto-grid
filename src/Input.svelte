@@ -8,6 +8,7 @@
   export let id = null;
   export let value = null;
   export let name = null;
+  export let max = 100;
   export let iconText = null;
   export let borders = true;
   export let disabled = false;
@@ -142,6 +143,7 @@
     <input
       bind:value
       type="number"
+      {max}
       {id}
       {name}
       {disabled}
@@ -157,6 +159,7 @@
       type="number"
       bind:value
       {id}
+      {max}
       {name}
       {disabled}
       {placeholder}

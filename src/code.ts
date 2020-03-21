@@ -19,7 +19,6 @@ var shouldAutoFlow = true;
 
 function sendPluginValues(node) {
   let pluginValues = fetchPluginData(node);
-  console.log({ pluginValues });
   if (pluginValues) {
     notifySelection(node.id, pluginValues);
   } else {
@@ -103,6 +102,12 @@ function reflow(grid, values) {
     }
     let rows = grid.findChildren(n => n.name === "Row");
     let childNodes = [];
+    if (!rows.length) {
+      for (const child of grid.children) {
+        childNodes.push(child);
+      }
+    }
+
     for (const row of rows) {
       if (supportsChildren(row)) {
         for (const child of row.children) {
@@ -193,7 +198,6 @@ function notifyNoSelection() {
 }
 
 function notifySelection(node = undefined, values = undefined) {
-  console.log({ values, node });
   figma.ui.postMessage({
     type: "selection",
     node,
@@ -202,14 +206,12 @@ function notifySelection(node = undefined, values = undefined) {
 }
 
 function checkSelection(node) {
-  console.log("node", node);
+  // Todo: Implement polling so when a user moves a node around we can react
 }
 
 figma.on("selectionchange", () => {
-  console.log("Selection change");
   let node = figma.currentPage.selection[0];
   if (!node) {
-    console.log("Got no selection, should we update all grids?");
     notifyNoSelection();
     updateGrids();
 
@@ -231,7 +233,6 @@ figma.ui.onmessage = msg => {
   // your HTML page is to use an object with a "type" property like this.
 
   if (msg.type === "gotoparent") {
-    console.log({ msg });
     let node = figma.currentPage.findOne(n => n.id === msg.id);
     figma.currentPage.selection = [node];
     figma.viewport.scrollAndZoomIntoView([node]);
@@ -241,11 +242,15 @@ figma.ui.onmessage = msg => {
   if (msg.type === "initiate") {
     let node = figma.currentPage.selection[0];
     if (!node) {
+      notifyNoSelection();
       updateGrids();
       return;
     }
     let grid = findParent(node);
-    if (!grid) return;
+    if (!grid) {
+      notifySelection();
+      return;
+    }
     sendPluginValues(grid);
     if (!shouldAutoFlow) return;
     reflow(grid, fetchPluginData(grid));
@@ -272,7 +277,6 @@ figma.ui.onmessage = msg => {
     let grid = findParent(node);
     if (!grid) return;
     updatePluginData(grid, msg);
-    console.log({ shouldAutoFlow });
     if (!shouldAutoFlow) return;
     reflow(grid, msg);
     return;
@@ -280,27 +284,31 @@ figma.ui.onmessage = msg => {
 
   if (msg.type === "place") {
     const { rowCount, columnCount, cellPadding, shouldAutoFlow } = msg;
-    const selection = figma.currentPage.selection[0];
+    const selection = figma.currentPage.selection;
     if (!selection) {
       return;
     }
-    const { x, y } = selection;
-    const parent = selection.parent;
-    const frame = createRow(msg);
-    frame.appendChild(selection);
+
+    const { x, y, parent } = selection[0]
+    
     var nodes = [];
-    for (var counter: number = 1; counter < columnCount; counter++) {
-      let copy = selection.clone();
-      frame.appendChild(copy);
+    if (selection.length > 1) {
+      nodes.push(...selection);
+    } else {
+      const frame = createRow(msg);
+      frame.appendChild(selection[0]);
+      for (var counter: number = 1; counter < columnCount; counter++) {
+        let copy = selection[0].clone();
+        frame.appendChild(copy);
+      }
+      nodes.push(frame);
+      for (var counter: number = 1; counter < rowCount; counter++) {
+        let copy = frame.clone();
+        frame.parent.appendChild(copy);
+        nodes.push(copy);
+      }
+      figma.currentPage.selection = nodes;
     }
-    // Todo: Remove all this and move to reflow, or possibly extract the reflow logic to another one
-    nodes.push(frame);
-    for (var counter: number = 1; counter < rowCount; counter++) {
-      let copy = frame.clone();
-      frame.parent.appendChild(copy);
-      nodes.push(copy);
-    }
-    figma.currentPage.selection = nodes;
     const grid = createGrid(msg);
 
     for (const node of nodes) {
