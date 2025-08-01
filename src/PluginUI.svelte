@@ -16,7 +16,9 @@
     Type,
     Section,
     SelectMenu,
-    Switch
+    Switch,
+    OnboardingTip,
+    IconWarning
   } from "figma-plugin-ds-svelte";
 
   var disabled = false;
@@ -132,9 +134,31 @@
     padding: 0;
     margin: 0;
   }
+  
+  .deprecation-notice {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 4px;
+    padding: var(--size-xxsmall);
+    margin-bottom: var(--size-xxsmall);
+  }
+  
+  .deprecation-notice p {
+    color: #856404;
+    margin: 0;
+    font-size: var(--font-size-xsmall);
+    line-height: var(--line-height);
+  }
 </style>
 
 <div class="wrapper p-xxsmall">
+  <!-- Deprecation Notice -->
+  <div class="deprecation-notice">
+    <OnboardingTip iconName={IconWarning} color="orange">
+      <strong>⚠️ DEPRECATED:</strong> This plugin is no longer actively maintained. Please consider migrating to alternative grid solutions.
+    </OnboardingTip>
+  </div>
+
   <div
     class="mb-xxsmall flex justify-content-between align-items-center"
     style="min-height: 25px;">

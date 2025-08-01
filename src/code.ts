@@ -8,8 +8,11 @@
 // This shows the HTML page in "ui.html".
 figma.showUI(__html__, {
   width: 250,
-  height: 170
+  height: 210
 });
+
+// Show deprecation notice
+figma.notify("⚠️ DEPRECATED: This plugin is no longer actively maintained. Please consider migrating to alternative grid solutions.", { timeout: 6000 });
 
 var shouldAutoFlow = true;
 
