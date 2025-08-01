@@ -1,5 +1,7 @@
 # AutoGrid for Figma
 
+> **⚠️ DEPRECATED**: This plugin is deprecated and is no longer maintained. Please consider using alternative solutions for your auto-grid needs.
+
 ## To get started
 ```bash
 npm install
