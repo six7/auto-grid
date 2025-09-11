@@ -3,6 +3,7 @@ import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import livereload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
+import replace from '@rollup/plugin-replace';
 import svg from 'rollup-plugin-svg';
 import typescript from 'rollup-plugin-typescript';
 
@@ -23,6 +24,12 @@ export default [{
 		file: 'src/build/bundle.js'
 	},
 	plugins: [
+		replace({
+			preventAssignment: true,
+			values: {
+				__SUPPRESS_DEPRECATION__: process.env.SUPPRESS_DEPRECATION === 'true'
+			}
+		}),
 		svelte({
 			// enable run-time checks when not in production
 			dev: !production
@@ -73,6 +80,12 @@ export default [{
 		name: 'code'
 	},
 	plugins: [
+		replace({
+			preventAssignment: true,
+			values: {
+				__SUPPRESS_DEPRECATION__: process.env.SUPPRESS_DEPRECATION === 'true'
+			}
+		}),
 		typescript(),
 		commonjs(),
 		production && terser()
