@@ -28,6 +28,10 @@
   var shouldRemoveOverflow = false;
   var gridNode = undefined;
 
+  // Deprecation banner state
+  let showDeprecation = false;
+  let deprecationMessage = "";
+
   //this is a reactive variable that will return false when a value is selected from
   //the select menu, its value is bound to the primary buttons disabled prop
 
@@ -100,6 +104,8 @@
 
   onMount(() => {
     initiate();
+    // Request current deprecation preference in case initial postMessage is missed
+    parent.postMessage({ pluginMessage: { type: "get-deprecation-pref" } }, "*");
   });
 
   onmessage = event => {
@@ -121,8 +127,21 @@
       notExisting = true;
     } else if (event.data.pluginMessage.type === "initiate") {
       shouldAutoFlow = event.data.pluginMessage.values.cellPadding;
+    } else if (event.data.pluginMessage.type === "deprecation") {
+      showDeprecation = Boolean(event.data.pluginMessage.show);
+      deprecationMessage = event.data.pluginMessage.message || "";
     }
   };
+
+  function dismissDeprecation() {
+    showDeprecation = false;
+    parent.postMessage({ pluginMessage: { type: "dismiss-deprecation" } }, "*");
+  }
+
+  function suppressDeprecation() {
+    showDeprecation = false;
+    parent.postMessage({ pluginMessage: { type: "suppress-deprecation" } }, "*");
+  }
 </script>
 
 <style>
@@ -132,9 +151,62 @@
     padding: 0;
     margin: 0;
   }
+
+  .deprecation-banner {
+    position: relative;
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, rgba(255, 200, 0, 0.2), rgba(255, 0, 128, 0.2));
+    overflow: hidden;
+    border: 1px solid rgba(255, 160, 0, 0.5);
+  }
+
+  .deprecation-banner::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -150%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(120deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0) 100%);
+    transform: skewX(-20deg);
+    animation: shine 2.5s infinite;
+    pointer-events: none;
+  }
+
+  @keyframes shine {
+    0% { left: -150%; }
+    60% { left: 150%; }
+    100% { left: 150%; }
+  }
+
+  .deprecation-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .deprecation-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
 </style>
 
 <div class="wrapper p-xxsmall">
+  {#if showDeprecation}
+    <div class="deprecation-banner">
+      <div class="deprecation-content">
+        <Type weight="bold" size="small">{deprecationMessage}</Type>
+        <div class="deprecation-actions">
+          <Button on:click={suppressDeprecation}>Don't show again</Button>
+          <Button variant="secondary" on:click={dismissDeprecation}>Dismiss</Button>
+        </div>
+      </div>
+    </div>
+  {/if}
   <div
     class="mb-xxsmall flex justify-content-between align-items-center"
     style="min-height: 25px;">

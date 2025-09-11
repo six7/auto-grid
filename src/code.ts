@@ -11,6 +11,26 @@ figma.showUI(__html__, {
   height: 170
 });
 
+const DEPRECATION_MESSAGE = "AutoGrid is deprecated and will be removed in a future release.";
+
+async function initDeprecationNotice() {
+  if (typeof __SUPPRESS_DEPRECATION__ !== "undefined" && __SUPPRESS_DEPRECATION__) {
+    return;
+  }
+  const suppressed = await figma.clientStorage.getAsync("suppressDeprecationNotice");
+  const shouldShow = !suppressed;
+  figma.ui.postMessage({
+    type: "deprecation",
+    show: shouldShow,
+    message: DEPRECATION_MESSAGE
+  });
+  if (shouldShow) {
+    figma.notify(DEPRECATION_MESSAGE, { timeout: 6000 });
+  }
+}
+
+initDeprecationNotice();
+
 var shouldAutoFlow = true;
 
 // Calls to "parent.postMessage" from within the HTML page will trigger this
@@ -228,9 +248,28 @@ figma.on("selectionchange", () => {
   reflow(grid, fetchPluginData(grid));
 });
 
-figma.ui.onmessage = msg => {
+figma.ui.onmessage = async msg => {
   // One way of distinguishing between different types of messages sent from
   // your HTML page is to use an object with a "type" property like this.
+
+  if (msg.type === "get-deprecation-pref") {
+    const suppressed = await figma.clientStorage.getAsync("suppressDeprecationNotice");
+    figma.ui.postMessage({
+      type: "deprecation",
+      show: !suppressed,
+      message: DEPRECATION_MESSAGE
+    });
+    return;
+  }
+
+  if (msg.type === "suppress-deprecation") {
+    await figma.clientStorage.setAsync("suppressDeprecationNotice", true);
+    return;
+  }
+
+  if (msg.type === "dismiss-deprecation") {
+    return;
+  }
 
   if (msg.type === "gotoparent") {
     let node = figma.currentPage.findOne(n => n.id === msg.id);
