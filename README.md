@@ -1,5 +1,23 @@
 # AutoGrid for Figma
 
+## ⚠️ DEPRECATION NOTICE
+
+**This plugin is deprecated and is no longer maintained.** 
+
+Figma now has native Auto Layout and Grid features that provide better functionality than this plugin. Please use Figma's built-in tools instead:
+
+- **Auto Layout**: Use Figma's native auto layout feature for automatic spacing and alignment
+- **Grid Layout**: Use Figma's grid layout properties for creating grid-based designs
+- **Layout Grids**: Use Figma's layout grid system for design alignment
+
+For more information about Figma's native layout features, visit the [Figma Help Center](https://help.figma.com/).
+
+---
+
+## Legacy Documentation
+
+_The following documentation is kept for historical reference only._
+
 ## To get started
 ```bash
 npm install

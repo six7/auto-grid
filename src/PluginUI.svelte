@@ -135,6 +135,14 @@
 </style>
 
 <div class="wrapper p-xxsmall">
+  <!-- Deprecation Notice -->
+  <div class="deprecation-notice mb-xsmall p-xxsmall" style="background-color: #f24822; color: white; border-radius: 4px; text-align: center;">
+    <Type weight="bold" size="small">⚠️ DEPRECATED</Type>
+    <div style="margin-top: 4px;">
+      <Type size="xsmall">This plugin is deprecated. Please use Figma's native Auto Layout and Grid features instead.</Type>
+    </div>
+  </div>
+  
   <div
     class="mb-xxsmall flex justify-content-between align-items-center"
     style="min-height: 25px;">
